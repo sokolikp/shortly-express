@@ -1,3 +1,4 @@
+//PORT: 4568
 var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
@@ -87,12 +88,21 @@ function(req, res) {
 app.post('/signup', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
-  var user = new User({username: username, password: password});
-  user.on('doneCreating', function() {
-    user.save().then(function() {
-      console.log('New user saved to database: ', user);
-      Users.add(user);
-      console.log('Users collection size: ', Users.length);
+  Users.query({where: {username: username}}).fetch().then(function(resp) {
+    var user = resp.at(0);
+    console.log('Error: user already exists: ', user.attributes);
+    res.redirect('/login');
+
+  }).catch(function(err) {
+    console.log('Great! User not in database yet');
+    var user = new User({username: username, password: password});
+    user.on('doneCreating', function() {
+      user.save().then(function() {
+        console.log('New user saved to database: ', user);
+        Users.add(user);
+        console.log('Users collection size: ', Users.length);
+        res.redirect('/login');
+      });
     });
   });
 });
@@ -100,16 +110,6 @@ app.post('/signup', function(req, res) {
 app.post('/login', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
-  // var userSearch = new User({username: username, password: password});
-  // userSearch.fetch().then(function(found) {
-  //   console.log('Found before if: ', found);
-  //   if(found) {
-  //     console.log('Found: ', found);
-  //   }
-  //   else {
-  //     console.log("This did not work");
-  //   }
-  // });
 
   Users.query({where: {username: username}}).fetch().then(function(resp) {
     var user = resp.at(0);
@@ -120,10 +120,15 @@ app.post('/login', function(req, res) {
         console.log('User is authenticated');
         res.redirect('/');
       }
-      else {console.log("Error! User password is incorrect");}
+      else {
+        console.log("Error! User password is incorrect");
+        res.redirect('/login');
+      }
     });
   }).catch(function(err) {
     console.log('Error. That user does not exist');
+    // alert("User does not exist. Please create an account.");
+    res.redirect('/signup');
   });
 
 });

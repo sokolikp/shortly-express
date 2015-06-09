@@ -9,18 +9,21 @@ var User = db.Model.extend({
   initialize: function(params){
     var context = this;
     this.set('username', params.username);
-    this.on('created', bcrypt.genSalt(10, function(err, salt) {
+    // this.on('created',
+    bcrypt.genSalt(10, function(err, salt) {
       if(err) throw err;
       bcrypt.hash(params.password, salt, null, function(err, hash) {
         // console.log(hash);
         if(err) throw err;
         context.set('password', hash);
+        console.log("Changing/updating password", context.get('password'));
         context.set('salt', salt);
-        console.log('Username + hash in initialize: ', context.get('username'), context.get('password'));
+        console.log("Changing/updating salt", context.get('salt'));
+        // console.log('Username + hash in initialize: ', context.get('username'), context.get('password'));
         context.trigger('doneCreating');
         // console.log('this: ', context.attributes);
       });
-    }));
+    });
   },
 
   authenticate: function(password, callback) {
