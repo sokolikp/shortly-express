@@ -2,6 +2,7 @@
 var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
+var session = require('express-session');
 var bodyParser = require('body-parser');
 
 
@@ -11,6 +12,8 @@ var User = require('./app/models/user');
 var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
+var Tokens = require('./app/collections/tokens');
+var Token = require('./app/models/token');
 
 var app = express();
 
@@ -22,11 +25,18 @@ app.use(bodyParser.json());
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
+app.use(session({
+  secret: 'captain planet',
+  resave: false,
+  saveUninitialized: true
+}));
 
 
 app.get('/',
 function(req, res) {
+  //logic that probits this site unless valid user
   res.render('index');
+  //res.renderAllLinks();
 });
 
 app.get('/signup',
@@ -36,15 +46,21 @@ function(req, res) {
 
 app.get('/login',
 function(req, res) {
-  res.render('login');
+  Tokens.query({where: {token_id: req.sessionID}}).fetch().then(function(data) {
+      res.redirect('/');
+  }).catch(function(err) {
+    res.render('login');
+  });
 });
 
 app.get('/create',
 function(req, res) {
+  //logic that probits this site unless valid user
   res.render('index');
 });
 
 app.get('/links',
+  //logic that probits this access always
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
@@ -98,10 +114,14 @@ app.post('/signup', function(req, res) {
     var user = new User({username: username, password: password});
     user.on('doneCreating', function() {
       user.save().then(function() {
+        var token = new Token({token_id: req.sessionID, user_id: user.get('id')});
+        token.save().then(function() {
+          Tokens.add(token);
+        });
         console.log('New user saved to database: ', user);
         Users.add(user);
         console.log('Users collection size: ', Users.length);
-        res.redirect('/login');
+        res.redirect('/');
       });
     });
   });
@@ -110,6 +130,8 @@ app.post('/signup', function(req, res) {
 app.post('/login', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
+
+  var sessionID = req.sessionID;
 
   Users.query({where: {username: username}}).fetch().then(function(resp) {
     var user = resp.at(0);
