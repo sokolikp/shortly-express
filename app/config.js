@@ -24,7 +24,7 @@ db.knex.schema.hasTable('urls').then(function(exists) {
       link.integer('visits');
       link.timestamps();
     }).then(function (table) {
-      console.log('Created Table', table);
+      console.log('Created URL Table', table);
     });
   }
 });
@@ -36,7 +36,7 @@ db.knex.schema.hasTable('clicks').then(function(exists) {
       click.integer('link_id');
       click.timestamps();
     }).then(function (table) {
-      console.log('Created Table', table);
+      console.log('Created Clicks Table', table);
     });
   }
 });
@@ -44,6 +44,32 @@ db.knex.schema.hasTable('clicks').then(function(exists) {
 /************************************************************/
 // Add additional schema definitions below
 /************************************************************/
+db.knex.schema.hasTable('users').then(function(exists) {
+  if (!exists) {
+    db.knex.schema.createTable('users', function (user) {
+      user.increments('id').primary();
+      user.string('username', 20);
+      user.string('password', 255);
+      user.string('salt', 255);
+      user.timestamps();
+    }).then(function (table) {
+      console.log('Created User Table', table);
+    });
+  }
+});
 
+db.knex.schema.hasTable('tokens').then(function(exists) {
+  if (!exists) {
+    db.knex.schema.createTable('tokens', function (token) {
+      token.increments('id').primary();
+      token.string('user_id', 20);
+      token.string('token_id', 255);
+      // token.string('expiration', 255);
+      // token.timestamps();
+    }).then(function (table) {
+      console.log('Created Table', table);
+    });
+  }
+});
 
 module.exports = db;

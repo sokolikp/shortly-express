@@ -23,24 +23,34 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
 
-app.get('/', 
+app.get('/',
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create', 
+app.get('/signup',
+function(req, res) {
+  res.render('signup');
+});
+
+app.get('/login',
+function(req, res) {
+  res.render('login');
+});
+
+app.get('/create',
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links', 
+app.get('/links',
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
 });
 
-app.post('/links', 
+app.post('/links',
 function(req, res) {
   var uri = req.body.url;
 
@@ -74,6 +84,34 @@ function(req, res) {
   });
 });
 
+app.post('/signup', function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+  var myUser = new User({username: username, password: password});
+});
+
+app.post('/login', function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+  Users.query({where: {username: username}})./*({where: {username: username}}).*/fetch().then(function(resp) {
+    // console.log('Returned from fetch: ', resp);
+    var user = resp.at(0);
+    console.log('Hi Im the fetched user', user);
+    user.authenticate(password, function(response) {
+      if(response) {
+        console.log('user is authenticated');
+      }
+      else {console.log("error! User password is incorrect");}
+    });
+    // .then(function(response) {
+    //   console.log('Response: ', response);
+    // });
+  }).catch(function(err) {
+    console.log('Error. That user does not exist');
+  });
+
+});
+
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
@@ -96,6 +134,7 @@ app.get('/*', function(req, res) {
       });
 
       click.save().then(function() {
+        console.log(click);
         db.knex('urls')
           .where('code', '=', link.get('code'))
           .update({
