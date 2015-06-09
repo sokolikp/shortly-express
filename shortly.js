@@ -59,6 +59,20 @@ function(req, res) {
   res.render('index');
 });
 
+app.get('/logout',
+function(req, res) {
+  console.log('Logging out; SessionID: ', req.sessionID);
+  Tokens.query({where: {token_id: req.sessionID}}).fetch().then(function(data) {
+    var tokenRef = data.at(0);
+    console.log('destroying data');
+    tokenRef.destroy();
+    req.session.destroy(function(err) {});
+    res.redirect('/login');
+  }).catch(function(err) {
+    console.log('I did not find a session - fATAL ERROR!');
+  });
+});
+
 app.get('/links',
   //logic that probits this access always
 function(req, res) {
