@@ -87,25 +87,41 @@ function(req, res) {
 app.post('/signup', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
-  var myUser = new User({username: username, password: password});
+  var user = new User({username: username, password: password});
+  user.on('doneCreating', function() {
+    user.save().then(function() {
+      console.log('New user saved to database: ', user);
+      Users.add(user);
+      console.log('Users collection size: ', Users.length);
+    });
+  });
 });
 
 app.post('/login', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
-  Users.query({where: {username: username}})./*({where: {username: username}}).*/fetch().then(function(resp) {
-    // console.log('Returned from fetch: ', resp);
+  // var userSearch = new User({username: username, password: password});
+  // userSearch.fetch().then(function(found) {
+  //   console.log('Found before if: ', found);
+  //   if(found) {
+  //     console.log('Found: ', found);
+  //   }
+  //   else {
+  //     console.log("This did not work");
+  //   }
+  // });
+
+  Users.query({where: {username: username}}).fetch().then(function(resp) {
     var user = resp.at(0);
-    console.log('Hi Im the fetched user', user);
+    console.log('Checking user credentials: ', user.attributes);
+    console.log('Number of users returned: ', resp.length);
     user.authenticate(password, function(response) {
       if(response) {
-        console.log('user is authenticated');
+        console.log('User is authenticated');
+        res.redirect('/');
       }
-      else {console.log("error! User password is incorrect");}
+      else {console.log("Error! User password is incorrect");}
     });
-    // .then(function(response) {
-    //   console.log('Response: ', response);
-    // });
   }).catch(function(err) {
     console.log('Error. That user does not exist');
   });

@@ -8,29 +8,26 @@ var User = db.Model.extend({
 
   initialize: function(params){
     var context = this;
-    var newUser = {};
-    newUser['username'] = params.username;
-    this.on('creating', bcrypt.genSalt(10, function(err, salt) {
+    this.set('username', params.username);
+    this.on('created', bcrypt.genSalt(10, function(err, salt) {
       if(err) throw err;
       bcrypt.hash(params.password, salt, null, function(err, hash) {
-        console.log(hash);
+        // console.log(hash);
         if(err) throw err;
-        newUser['password'] = hash;
-        newUser['salt'] = salt;
-        console.log(newUser);
-        // context.set('password', hash);
-        // context.set('salt', salt);
-        context.save(newUser).then(function() {
-          console.log('Saved new user');
-        });
+        context.set('password', hash);
+        context.set('salt', salt);
+        console.log('Username + hash in initialize: ', context.get('username'), context.get('password'));
+        context.trigger('doneCreating');
+        // console.log('this: ', context.attributes);
       });
     }));
   },
 
   authenticate: function(password, callback) {
-    return bcrypt.compare(password, this.get('password'), function(err, res) {
+    console.log("model salt & password in authenticate: ", this.get('salt'), this.get('password'));
+    bcrypt.compare(password, this.get('password'), function(err, res) {
         if (err) throw err;
-        // console.log('Response from authenticate: ', res);
+        console.log('Response from authenticate: ', res);
         // return res;
         callback(res);
     });
