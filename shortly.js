@@ -35,6 +35,7 @@ app.use(session({
 app.get('/',
 function(req, res) {
   //logic that probits this site unless valid user
+  console.log('Rendering index file');
   res.render('index');
   //res.renderAllLinks();
 });
@@ -46,11 +47,12 @@ function(req, res) {
 
 app.get('/login',
 function(req, res) {
-  Tokens.query({where: {token_id: req.sessionID}}).fetch().then(function(data) {
-      res.redirect('/');
-  }).catch(function(err) {
-    res.render('login');
-  });
+  // Tokens.query({where: {token_id: req.sessionID}}).fetch().then(function(data) {
+  //     res.redirect('/');
+  // }).catch(function(err) {
+  //   res.render('login');
+  // });
+  res.render('login');
 });
 
 app.get('/create',
@@ -61,16 +63,22 @@ function(req, res) {
 
 app.get('/logout',
 function(req, res) {
-  console.log('Logging out; SessionID: ', req.sessionID);
-  Tokens.query({where: {token_id: req.sessionID}}).fetch().then(function(data) {
-    var tokenRef = data.at(0);
-    console.log('destroying data');
-    tokenRef.destroy();
-    req.session.destroy(function(err) {});
-    res.redirect('/login');
-  }).catch(function(err) {
-    console.log('I did not find a session - fATAL ERROR!');
-  });
+  // console.log('Logging out; SessionID: ', req.sessionID);
+  // Tokens.query({where: {token_id: req.sessionID}}).fetch().then(function(data) {
+  //   var tokenRef = data.at(0);
+  //   console.log('destroying data');
+  //   tokenRef.destroy();
+  //   req.session.destroy(function(err) {});
+  //   res.redirect('/login');
+  // }).catch(function(err) {
+  //   console.log('I did not find a session - fATAL ERROR!');
+  // });
+  console.log('logging out user as a get method');
+});
+
+app.post('/logout',
+function(req, res) {
+  console.log('logging out user as a post method');
 });
 
 app.get('/links',
@@ -118,26 +126,17 @@ function(req, res) {
 app.post('/signup', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
-  Users.query({where: {username: username}}).fetch().then(function(resp) {
-    var user = resp.at(0);
-    console.log('Error: user already exists: ', user.attributes);
-    res.redirect('/login');
 
-  }).catch(function(err) {
-    console.log('Great! User not in database yet');
-    var user = new User({username: username, password: password});
-    user.on('doneCreating', function() {
-      user.save().then(function() {
-        var token = new Token({token_id: req.sessionID, user_id: user.get('id')});
-        token.save().then(function() {
-          Tokens.add(token);
-        });
-        console.log('New user saved to database: ', user);
-        Users.add(user);
-        console.log('Users collection size: ', Users.length);
+ new User({username: username}).fetch().then(function(userModel) {
+    if(userModel) { //user exists
+      return console.log("User already exists!");
+    } else {
+      var user = new User({username: username, password: password});
+      user.save().then(function(savedUser) {
+        console.log('User saved to database');
         res.redirect('/');
       });
-    });
+    }
   });
 });
 
@@ -145,35 +144,21 @@ app.post('/login', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
 
-  var sessionID = req.sessionID;
-
-  Users.query({where: {username: username}}).fetch().then(function(resp) {
-    var user = resp.at(0);
-    console.log('Checking user credentials: ', user.attributes);
-    console.log('Number of users returned: ', resp.length);
-    user.authenticate(password, function(response) {
-      if(response) {
-        console.log('User is authenticated');
-        res.redirect('/');
-      }
-      else {
-        console.log("Error! User password is incorrect");
-        res.redirect('/login');
-      }
-    });
-  }).catch(function(err) {
-    console.log('Error. That user does not exist');
-    // alert("User does not exist. Please create an account.");
-    res.redirect('/signup');
+  var user = new User({username: username}).fetch().then(function(userModel) {
+    if(userModel) { //user exists
+      userModel.authenticate(password, function(found) {
+        if (found) res.redirect('/');
+        else {
+          console.log('Incorrect password. Redirecting');
+          res.redirect('/login');
+        }
+      });
+    } else {
+      console.log('This user does not exist. Redirecting to signup.');
+      res.redirect('/signup');
+    }
   });
-
 });
-
-/************************************************************/
-// Write your authentication routes here
-/************************************************************/
-
-
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
