@@ -34,7 +34,6 @@ app.use(session({
 
 app.get('/', util.checkUser, function(req, res) {
   //logic that probits this site unless valid user
-  console.log('Rendering index file');
   res.render('index');
 });
 
@@ -49,7 +48,6 @@ function(req, res) {
 });
 
 app.get('/create', util.checkUser, function(req, res) {
-  //logic that probits this site unless valid user
   res.render('index');
 });
 
@@ -60,7 +58,6 @@ app.get('/logout', function(req, res) {
 
 app.post('/logout',
 function(req, res) {
-  console.log('logging out user as a post method');
 });
 
 app.get('/links', util.checkUser, function(req, res) {
@@ -109,15 +106,12 @@ app.post('/signup', function(req, res) {
 
  new User({username: username}).fetch().then(function(userModel) {
     if(userModel) { //user exists
-      console.log('redirecting to login from signup');
       res.redirect('/login');
       return console.log("User already exists!");
     } else {
       var user = new User({username: username, password: password});
       user.save().then(function(savedUser) {
-        console.log('User saved to database');
         util.createSession(req, res, user);
-        // res.redirect('/');
       });
     }
   });
@@ -131,18 +125,14 @@ app.post('/login', function(req, res) {
     if(userModel) { //user exists
       userModel.authenticate(password, function(found) {
         if (found) {
-          console.log("I was found and should be redirecting to homepage");
           util.createSession(req, res, userModel);
-          // res.redirect('/');
         }
         else {
-          console.log('Incorrect password. Redirecting');
           res.redirect('/login');
         }
       });
     } else {
-      console.log('This user does not exist. Redirecting to signup.');
-      res.redirect('/signup');
+      res.redirect('/login');
     }
   });
 });
@@ -154,8 +144,6 @@ app.post('/login', function(req, res) {
 /************************************************************/
 
 app.get('/*', function(req, res) {
-  console.log('in redirect to wild card');
-
   new Link({ code: req.params[0] }).fetch().then(function(link) {
     if (!link) {
       res.redirect('/');
